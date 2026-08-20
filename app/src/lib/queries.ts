@@ -4,6 +4,7 @@ import type {
   ContactoScore,
   FrustrationScore,
   FragmentoVoc,
+  FragmentoVocConContacto,
   CombGap,
   Deal,
   Pipeline,
@@ -222,5 +223,37 @@ export async function triggersDeContacto(contactoId: string): Promise<Touchpoint
 
 export async function omitirTrigger(id: string): Promise<void> {
   const { error } = await supabase.from('touchpoint_triggers').update({ status: 'skipped' }).eq('id', id)
+  if (error) throw error
+}
+
+export async function fragmentosVocGlobal(): Promise<FragmentoVocConContacto[]> {
+  const { data, error } = await supabase
+    .from('fragmentos_voc')
+    .select('*, contacto:contactos(id, nombre, email)')
+    .order('ocurrido_en', { ascending: false })
+  if (error) throw error
+  return data as unknown as FragmentoVocConContacto[]
+}
+
+export interface NuevoFragmentoVoc {
+  project_id: string
+  contacto_id: string
+  canal: string | null
+  texto_original: string
+  tag_semantico: string | null
+  score_intensidad: number | null
+}
+
+/**
+ * En producción esto lo llena un webhook (WhatsApp/email/formulario) que clasifica
+ * con Claude Haiku. Acá se carga a mano para probar el loop VOC → Score →
+ * Frustración sin esa integración todavía (docs/01-mvp-scope.md).
+ */
+export async function crearFragmentoVoc(payload: NuevoFragmentoVoc): Promise<void> {
+  const { error } = await supabase.from('fragmentos_voc').insert({
+    ...payload,
+    ocurrido_en: new Date().toISOString(),
+    clasificado_en: payload.tag_semantico ? new Date().toISOString() : null,
+  })
   if (error) throw error
 }

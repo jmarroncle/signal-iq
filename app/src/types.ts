@@ -167,3 +167,7 @@ export interface TouchpointTrigger {
 export interface TouchpointTriggerConTouchpoint extends TouchpointTrigger {
   touchpoint: Pick<Touchpoint, 'id' | 'name' | 'channel'>
 }
+
+export interface FragmentoVocConContacto extends FragmentoVoc {
+  contacto: Pick<Contacto, 'id' | 'nombre' | 'email'>
+}
