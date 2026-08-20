@@ -117,3 +117,48 @@ export async function listarActividadGlobal(limit = 60): Promise<{ items: Activi
 
   return { items, nombres }
 }
+
+export interface ResumenDashboard {
+  total: number
+  hot: number
+  warm: number
+  cold: number
+  sinScore: number
+  frustracionPromedio: number | null
+  contactosEnRiesgo: number // frustration_index >= 50
+  topTags: { tag: string; count: number }[]
+}
+
+export async function obtenerResumenDashboard(): Promise<ResumenDashboard> {
+  const [{ data: contactos, error: errorContactos }, { data: fragmentos, error: errorFragmentos }] = await Promise.all([
+    supabase.from('contactos').select('current_classification, current_frustration_index'),
+    supabase.from('fragmentos_voc').select('tag_semantico'),
+  ])
+  if (errorContactos) throw errorContactos
+  if (errorFragmentos) throw errorFragmentos
+
+  const filas = contactos as Pick<Contacto, 'current_classification' | 'current_frustration_index'>[]
+  const total = filas.length
+  const hot = filas.filter((c) => c.current_classification === 'HOT').length
+  const warm = filas.filter((c) => c.current_classification === 'WARM').length
+  const cold = filas.filter((c) => c.current_classification === 'COLD').length
+  const sinScore = total - hot - warm - cold
+  const conFrustracion = filas.filter((c) => c.current_frustration_index !== null)
+  const frustracionPromedio =
+    conFrustracion.length > 0
+      ? conFrustracion.reduce((acc, c) => acc + (c.current_frustration_index ?? 0), 0) / conFrustracion.length
+      : null
+  const contactosEnRiesgo = filas.filter((c) => (c.current_frustration_index ?? 0) >= 50).length
+
+  const conteoTags = new Map<string, number>()
+  for (const f of fragmentos as { tag_semantico: string | null }[]) {
+    if (!f.tag_semantico) continue
+    conteoTags.set(f.tag_semantico, (conteoTags.get(f.tag_semantico) ?? 0) + 1)
+  }
+  const topTags = [...conteoTags.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  return { total, hot, warm, cold, sinScore, frustracionPromedio, contactosEnRiesgo, topTags }
+}

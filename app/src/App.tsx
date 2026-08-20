@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { DashboardPage } from './pages/DashboardPage'
 import { ContactosPage } from './pages/ContactosPage'
 import { FichaContactoPage } from './pages/FichaContactoPage'
 import { PipelinePage } from './pages/PipelinePage'
@@ -28,13 +29,15 @@ export default function App() {
             <span className="ml-2 text-sm text-slate-500">CRM nativo — Tutellus</span>
           </div>
           <nav className="flex gap-4">
-            <NavItem to="/">Contactos</NavItem>
+            <NavItem to="/">Resumen</NavItem>
+            <NavItem to="/contactos">Contactos</NavItem>
             <NavItem to="/pipeline">Pipeline</NavItem>
             <NavItem to="/actividad">Actividad</NavItem>
           </nav>
         </header>
         <Routes>
-          <Route path="/" element={<ContactosPage />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/contactos" element={<ContactosPage />} />
           <Route path="/contactos/:id" element={<FichaContactoPage />} />
           <Route path="/pipeline" element={<PipelinePage />} />
           <Route path="/actividad" element={<ActividadGlobalPage />} />
