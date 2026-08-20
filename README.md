@@ -35,6 +35,8 @@ recomendación conductual accionable en una sola vista — con o sin CRM propio.
 - [`docs/03-api-endpoints.md`](docs/03-api-endpoints.md) — endpoints v1
 - [`docs/04-constructor-panel-onboarding.md`](docs/04-constructor-panel-onboarding.md) — flujo de onboarding pantalla a pantalla
 - [`docs/05-modo-chat-claude.md`](docs/05-modo-chat-claude.md) — implementación del Modo Chat con la API de Claude
+- [`docs/06-formulas-scoring-frustracion.md`](docs/06-formulas-scoring-frustracion.md) — fórmulas del Lead Score y el Frustration Index, funciones SQL y cuándo se recalculan
+- [`docs/07-wiki-metricas.md`](docs/07-wiki-metricas.md) — wiki in-app: qué es cada métrica y por qué importa para el negocio
 
 ## Stack
 

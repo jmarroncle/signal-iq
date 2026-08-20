@@ -17,6 +17,8 @@ unifica antes de llegar a Supabase.
 | `GET` | `/frustration/alerts` | Feed de alertas activas sin reconocer | Frontend / integración con Slack o email |
 | `GET` | `/touchpoints/pending` | Lista triggers en estado `pending` para que Klaviyo/Wati los levanten | Zapier / webhook saliente de Supabase |
 | `GET` | `/dashboard/summary` | Agregados: conteo HOT/WARM/COLD, promedio de frustración, tags VOC más frecuentes | Frontend |
+| `GET` | `/wiki` | Lista los artículos de la wiki por categoría | Frontend |
+| `GET` | `/wiki/:slug` | Artículo puntual — es lo que abre el ícono "?" contextual junto a un score o al índice de frustración en la ficha de contacto | Frontend |
 
 ## Endpoints del Constructor de Panel (onboarding)
 
