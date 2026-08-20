@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { listarTouchpoints, crearTouchpoint, actualizarTouchpoint, eliminarTouchpoint, obtenerProyectoId } from '../lib/queries'
+import { obtenerProyectoId } from '../lib/queries'
+import { listarTouchpoints, crearTouchpoint, actualizarTouchpoint, eliminarTouchpoint } from '../lib/api'
 import type { Touchpoint, TriggerConditions, CanalTouchpoint } from '../types'
 
 const canalEstilo: Record<CanalTouchpoint, string> = {

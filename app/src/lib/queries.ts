@@ -11,7 +11,6 @@ import type {
   DealConContacto,
   ActividadItem,
   WikiArticle,
-  Touchpoint,
   TouchpointTriggerConTouchpoint,
   EsquemaTemplate,
   EsquemaConfig,
@@ -191,27 +190,6 @@ export async function obtenerProyectoId(): Promise<string> {
   const { data, error } = await supabase.from('projects').select('id').limit(1).single()
   if (error) throw error
   return (data as { id: string }).id
-}
-
-export async function listarTouchpoints(): Promise<Touchpoint[]> {
-  const { data, error } = await supabase.from('touchpoints').select('*').order('priority', { ascending: false })
-  if (error) throw error
-  return data as Touchpoint[]
-}
-
-export async function crearTouchpoint(touchpoint: Omit<Touchpoint, 'id'> & { id?: string }): Promise<void> {
-  const { error } = await supabase.from('touchpoints').insert(touchpoint)
-  if (error) throw error
-}
-
-export async function actualizarTouchpoint(id: string, cambios: Partial<Omit<Touchpoint, 'id'>>): Promise<void> {
-  const { error } = await supabase.from('touchpoints').update(cambios).eq('id', id)
-  if (error) throw error
-}
-
-export async function eliminarTouchpoint(id: string): Promise<void> {
-  const { error } = await supabase.from('touchpoints').delete().eq('id', id)
-  if (error) throw error
 }
 
 export async function triggersDeContacto(contactoId: string): Promise<TouchpointTriggerConTouchpoint[]> {
