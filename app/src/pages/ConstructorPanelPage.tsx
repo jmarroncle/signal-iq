@@ -4,7 +4,7 @@ import { MessageCircle, LayoutGrid, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { listarEsquemaTemplates, obtenerProyecto, actualizarEsquemaConfig } from '../lib/queries'
 import type { EsquemaTemplate, EsquemaConfig, CampoCustom, TipoCampoCustom, EtapaTipo } from '../types'
 
-type Paso = 'crm' | 'modo' | 'selector' | 'preview' | 'confirmacion'
+type Paso = 'crm' | 'modo' | 'selector' | 'preview' | 'confirmacion' | 'resumen'
 
 const tiposCampo: TipoCampoCustom[] = ['texto', 'numero', 'fecha', 'booleano', 'seleccion']
 
@@ -137,6 +137,7 @@ export function ConstructorPanelPage() {
 
   const [templateElegido, setTemplateElegido] = useState<EsquemaTemplate | null>(null)
   const [esquema, setEsquema] = useState<EsquemaConfig | null>(null)
+  const [esquemaGuardado, setEsquemaGuardado] = useState<EsquemaConfig | null>(null)
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
@@ -144,6 +145,10 @@ export function ConstructorPanelPage() {
       .then(([t, p]) => {
         setTemplates(t)
         setProyectoId(p.id)
+        if (p.esquema_config && 'tipo_negocio' in p.esquema_config) {
+          setEsquemaGuardado(p.esquema_config as EsquemaConfig)
+          setPaso('resumen')
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setCargando(false))
@@ -175,6 +180,7 @@ export function ConstructorPanelPage() {
     setGuardando(true)
     try {
       await actualizarEsquemaConfig(proyectoId, esquema)
+      setEsquemaGuardado(esquema)
       setPaso('confirmacion')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar el esquema')
@@ -192,6 +198,111 @@ export function ConstructorPanelPage() {
       <p className="mb-8 text-sm text-slate-500">
         Define qué campos, etapas y tags usa tu panel — sin crear tablas nuevas, solo configuración.
       </p>
+
+      {paso === 'resumen' && esquemaGuardado && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/40 p-4">
+            <p className="text-sm text-slate-300">
+              Plantilla base: <strong>{templates.find((t) => t.slug === esquemaGuardado.tipo_negocio)?.nombre ?? esquemaGuardado.tipo_negocio}</strong>
+              {esquemaGuardado.generado_por === 'chat' ? ' · generado con Modo Chat' : ' · generado con Modo Selector'}
+            </p>
+            <button
+              onClick={() => setPaso('modo')}
+              className="rounded-md border border-slate-700 px-3 py-1.5 text-sm hover:bg-slate-900"
+            >
+              Reconfigurar
+            </button>
+          </div>
+
+          <section className="rounded-lg border border-slate-800 p-5">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">Terminología</h3>
+            <p className="text-sm text-slate-400">
+              Contacto se llama <strong className="text-slate-200">{esquemaGuardado.terminologia.contacto}</strong> · Deal se llama{' '}
+              <strong className="text-slate-200">{esquemaGuardado.terminologia.deal}</strong>
+            </p>
+          </section>
+
+          <section className="rounded-lg border border-slate-800 p-5">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">
+              {esquemaGuardado.terminologia.contacto} — campos custom
+            </h3>
+            {esquemaGuardado.entidades.contacto.campos_custom.length === 0 ? (
+              <p className="text-sm text-slate-500">Ninguno.</p>
+            ) : (
+              <ul className="space-y-1 text-sm text-slate-400">
+                {esquemaGuardado.entidades.contacto.campos_custom.map((c) => (
+                  <li key={c.clave}>
+                    {c.etiqueta} <span className="text-slate-600">({c.tipo}{c.opciones?.length ? `: ${c.opciones.join(', ')}` : ''})</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-slate-800 p-5">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">{esquemaGuardado.terminologia.deal} — etapas del pipeline</h3>
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {esquemaGuardado.entidades.deal.etapas_pipeline.map((et) => (
+                <span key={et.label} className={`rounded-full border px-2 py-0.5 text-xs ${colorEtapaTipo[et.tipo]}`}>
+                  {et.label}
+                </span>
+              ))}
+            </div>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Campos custom</h4>
+            {esquemaGuardado.entidades.deal.campos_custom.length === 0 ? (
+              <p className="text-sm text-slate-500">Ninguno.</p>
+            ) : (
+              <ul className="space-y-1 text-sm text-slate-400">
+                {esquemaGuardado.entidades.deal.campos_custom.map((c) => (
+                  <li key={c.clave}>
+                    {c.etiqueta} <span className="text-slate-600">({c.tipo}{c.opciones?.length ? `: ${c.opciones.join(', ')}` : ''})</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-slate-800 p-5">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">Eventos</h3>
+            <p className="mb-1 text-xs text-slate-500">Canales sugeridos</p>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {esquemaGuardado.entidades.evento.canales_sugeridos.map((c) => (
+                <span key={c} className="rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">
+                  {c}
+                </span>
+              ))}
+            </div>
+            <p className="mb-1 text-xs text-slate-500">Tipos de evento sugeridos</p>
+            <div className="flex flex-wrap gap-1.5">
+              {esquemaGuardado.entidades.evento.tipos_evento_sugeridos.map((t) => (
+                <span key={t} className="rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-slate-800 p-5">
+            <h3 className="mb-3 text-sm font-semibold text-slate-200">VOC — tags custom</h3>
+            {esquemaGuardado.entidades.fragmento_voc.tags_custom.length === 0 ? (
+              <p className="text-sm text-slate-500">Ninguno — solo los 5 tags base.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {esquemaGuardado.entidades.fragmento_voc.tags_custom.map((t) => (
+                  <span key={t} className="rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <p className="text-xs text-slate-600">
+            Esto es lo que hay guardado en la base — todavía no se refleja en el resto del CRM (Contactos, Pipeline,
+            etc. siguen usando los nombres y campos fijos por ahora).
+          </p>
+        </div>
+      )}
 
       {paso === 'crm' && (
         <div className="space-y-4">
