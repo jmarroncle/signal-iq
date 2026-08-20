@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# Signal IQ — app
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend de Signal IQ. Documentación completa del producto en el
+[`README.md` de la raíz del repo](../README.md) — este archivo es solo para
+levantar el código local.
 
-Currently, two official plugins are available:
+## Correr local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install          # solo la primera vez
+cp .env.local.example .env.local   # completar con las credenciales de Supabase
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Detalle de dónde sacar las credenciales y errores comunes en
+[`../docs/10-como-operar.md`](../docs/10-como-operar.md).
+
+## Estructura
+
+- `src/pages/` — una pantalla por archivo, ruteadas en `src/App.tsx`
+- `src/lib/queries.ts` — llamadas directas a Supabase (la mayoría de las pantallas, todavía)
+- `src/lib/api.ts` — llamadas al backend propio en `api/` (Touchpoints, migrando el resto de a poco)
+- `api/` — funciones serverless de Vercel (Node.js) — el backend real, en construcción
+- Stack: Vite + React 19 + TypeScript + Tailwind v4 + Supabase JS

@@ -123,6 +123,25 @@ serverless de Vercel** en `app/api/*.ts` — mismo proyecto y deploy que el
 frontend, no hace falta hosting nuevo. Dos gotchas encontrados armando el
 primer bloque (Touchpoints):
 
+### Mapa: qué pantalla usa qué capa de datos
+
+El código convive con dos formas de traer datos mientras dura la migración —
+esto no es accidental ni desprolijo, es el estado intermedio esperado. Antes
+de tocar una pantalla, conviene saber cuál le toca:
+
+| Pantalla | Capa de datos | Archivo |
+|---|---|---|
+| Touchpoints (`/touchpoints`) | Backend propio (`fetch` a `/api/touchpoints`) | `src/lib/api.ts` |
+| Contactos, Ficha de Contacto, Pipeline, Actividad global, VOC Explorer, Dashboard, Constructor de Panel | Supabase directo desde el navegador | `src/lib/queries.ts` |
+
+`src/lib/api.ts` va a ir creciendo a medida que se migre cada pantalla — el
+patrón para migrar una es: crear el/los endpoint(s) en `app/api/`, replicar
+la firma de la función correspondiente de `queries.ts` en `api.ts` (mismo
+nombre y tipo de retorno para minimizar el cambio en el componente), probar
+en un deploy de preview, y recién ahí borrar la versión vieja de
+`queries.ts`. `docs/03-api-endpoints.md` tiene el mapeo completo de qué
+endpoints faltan.
+
 ### `vercel.json` tiene que excluir `/api/*` del rewrite del SPA
 
 El rewrite que manda todo a `index.html` para que React Router maneje las

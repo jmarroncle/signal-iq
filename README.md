@@ -6,6 +6,13 @@ o de inversión.
 
 Caso de partida: **Tutellus / tokenización agrícola**.
 
+## Por dónde empezar (si es tu primera vez viendo esto)
+
+1. Probá la app en vivo: **[signal-iq-jet.vercel.app](https://signal-iq-jet.vercel.app)** — sin login todavía, a propósito (ver "Estado" más abajo).
+2. Para el contexto de negocio (qué problema resuelve y por qué), seguí con `01-mvp-scope.md` y `09-matematica-del-modelo.md`.
+3. Para el detalle técnico exacto (modelo de datos, endpoints, fórmulas), la tabla de abajo indexa los 10 docs de `docs/` — no hace falta leerlos todos, cada fila dice qué cubre cada uno.
+4. Si vas a correr el código local, `docs/10-como-operar.md` tiene el paso a paso y los errores más comunes ya resueltos.
+
 ## Qué resuelve
 
 Combina tres cosas que normalmente viven separadas:
@@ -32,8 +39,9 @@ recomendación conductual accionable en una sola vista — con o sin CRM propio.
 
 Organizada según [Diátaxis](https://diataxis.fr/): **Reference** (el detalle
 técnico exacto), **Explanation** (el por qué), **How-to** (resolver algo
-puntual), **Tutorial** (onboarding de cero — no existe todavía, no hizo falta
-hasta ahora).
+puntual), **Tutorial** (onboarding de cero — el bloque "Por dónde empezar" de
+arriba cumple ese rol de forma liviana; no hay un doc dedicado todavía porque
+el repo recién ahora empieza a tener lectores que no son el propio autor).
 
 | Doc | Tipo | Qué cubre |
 |---|---|---|
