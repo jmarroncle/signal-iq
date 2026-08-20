@@ -18,23 +18,34 @@ Combina tres cosas que normalmente viven separadas:
 3. **COM-B Gaps** — mapea cada tag VOC a una brecha del modelo COM-B
    (Capability / Opportunity / Motivation) y recomienda el nudge conductual
    correspondiente.
+4. **CRM nativo** — 4 entidades core (Contacto, Deal, Evento, Fragmento VOC) con
+   vistas de tabla filtrable, pipeline kanban, actividad global y ficha de
+   contacto. Setup vía **Constructor de Panel**: el usuario sin CRM describe su
+   negocio en lenguaje natural (Modo Chat, vía Claude) o elige una de 4
+   plantillas (Modo Selector) y la app arma el esquema de campos custom y
+   etapas de pipeline adaptado a ese negocio.
 
 El diferencial: nadie más combina score de lead + lenguaje real del cliente +
-recomendación conductual accionable en una sola vista.
+recomendación conductual accionable en una sola vista — con o sin CRM propio.
 
 ## Documentación
 
 - [`docs/01-mvp-scope.md`](docs/01-mvp-scope.md) — qué entra en v1.0 y qué queda para v2, y por qué
 - [`docs/02-data-model.md`](docs/02-data-model.md) — modelo de datos completo en Supabase
 - [`docs/03-api-endpoints.md`](docs/03-api-endpoints.md) — endpoints v1
+- [`docs/04-constructor-panel-onboarding.md`](docs/04-constructor-panel-onboarding.md) — flujo de onboarding pantalla a pantalla
+- [`docs/05-modo-chat-claude.md`](docs/05-modo-chat-claude.md) — implementación del Modo Chat con la API de Claude
 
 ## Stack
 
 - **Segment** — bus de eventos (unifica Klaviyo, Wati/respond.io, GA4, Typeform)
 - **Supabase** (proyecto compartido "Behavioral platform", schema propio `signal_iq`)
   — warehouse y backend (Postgres + REST API + auth)
-- **Claude API** (`claude-haiku-4-5-20251001`) — clasificación NLP de fragmentos VOC
-  en tiempo real, alto volumen → se prioriza costo sobre precisión marginal
+- **Claude API**:
+  - `claude-haiku-4-5-20251001` — clasificación NLP de fragmentos VOC en tiempo
+    real, alto volumen → se prioriza costo sobre precisión marginal
+  - `claude-sonnet-4-6` — Modo Chat del Constructor de Panel, bajo volumen (una
+    vez por cuenta) y alto impacto → se prioriza calidad de interpretación
 
 ## Estado
 
