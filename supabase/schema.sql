@@ -81,10 +81,25 @@ create index contactos_custom_fields_idx on signal_iq.contactos using gin (custo
 -- ============================================
 -- DEALS
 -- ============================================
+-- ============================================
+-- PIPELINES (catálogo: qué pipelines existen y qué etapas tiene cada uno)
+-- ============================================
+create table signal_iq.pipelines (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references signal_iq.projects(id) not null,
+  nombre text not null,
+  tipo text check (tipo in ('loyalty','ventas','custom')) not null,
+  es_principal boolean default false, -- cuál se muestra por default en el kanban
+  etapas jsonb not null, -- [{label, tipo: 'abierta'|'ganado'|'perdido'}, ...]
+  orden int default 0
+);
+create index pipelines_proyecto_idx on signal_iq.pipelines (project_id);
+
 create table signal_iq.deals (
   id uuid primary key default gen_random_uuid(),
   contacto_id uuid references signal_iq.contactos(id) not null,
   project_id uuid references signal_iq.projects(id) not null,
+  pipeline_id uuid references signal_iq.pipelines(id) not null,
   etapa text not null,
   etapa_tipo text check (etapa_tipo in ('abierta','ganado','perdido')) default 'abierta',
   valor numeric,
@@ -94,7 +109,7 @@ create table signal_iq.deals (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
-create index deals_proyecto_etapa_idx on signal_iq.deals (project_id, etapa);
+create index deals_proyecto_etapa_idx on signal_iq.deals (project_id, pipeline_id, etapa);
 create index deals_contacto_idx on signal_iq.deals (contacto_id);
 create index deals_custom_fields_idx on signal_iq.deals using gin (custom_fields);
 
@@ -206,7 +221,7 @@ create table signal_iq.touchpoints (
   id uuid primary key default gen_random_uuid(),
   project_id uuid references signal_iq.projects(id) not null,
   name text not null,
-  channel text check (channel in ('email','whatsapp','sms')) not null,
+  channel text check (channel in ('email','whatsapp','sms','push')) not null,
   comb_gap_id uuid references signal_iq.comb_gaps(id),
   template_ref text,
   trigger_conditions jsonb,
@@ -919,6 +934,14 @@ begin
                and f.ocurrido_en > now() - interval '30 days'
                and f.tag_semantico in (select jsonb_array_elements_text(t.trigger_conditions->'tags_requeridos'))
            ))
+      and (t.trigger_conditions->>'pipeline_tipo' is null
+           or exists (
+             select 1 from signal_iq.deals d
+             join signal_iq.pipelines p on p.id = d.pipeline_id
+             where d.contacto_id = p_contacto_id
+               and p.tipo = t.trigger_conditions->>'pipeline_tipo'
+               and (t.trigger_conditions->>'etapa' is null or d.etapa = t.trigger_conditions->>'etapa')
+           ))
       and not exists (
         select 1 from signal_iq.touchpoint_triggers tt
         where tt.contacto_id = p_contacto_id
@@ -965,8 +988,14 @@ create trigger trg_on_new_evento
 after insert on signal_iq.eventos
 for each row execute function signal_iq.on_new_evento();
 
--- touchpoints pendientes dejan de tener sentido si el deal ya se cerró
-create or replace function signal_iq.on_deal_cerrado()
+-- Se dispara en cualquier cambio de etapa de un deal (venta o loyalty):
+-- 1) si el deal se cerró (ganado/perdido), los touchpoints pendientes de ESE
+--    deal dejan de tener sentido -- se descartan.
+-- 2) en cualquier cambio de etapa (incluido dentro de un pipeline de loyalty
+--    que nunca "cierra", ej. "Cliente activo" -> "En riesgo de churn") se
+--    vuelven a evaluar los touchpoints -- así mover una tarjeta en el kanban
+--    puede disparar una notificación (push, whatsapp, etc.) al toque.
+create or replace function signal_iq.on_deal_actualizado()
 returns trigger as $$
 begin
   if new.etapa_tipo in ('ganado','perdido') and old.etapa_tipo = 'abierta' then
@@ -974,13 +1003,18 @@ begin
     set status = 'skipped'
     where contacto_id = new.contacto_id and status = 'pending';
   end if;
+
+  if new.etapa is distinct from old.etapa then
+    perform signal_iq.evaluar_touchpoints_contacto(new.contacto_id);
+  end if;
+
   return new;
 end;
 $$ language plpgsql;
 
-create trigger trg_on_deal_cerrado
+create trigger trg_on_deal_actualizado
 after update on signal_iq.deals
-for each row execute function signal_iq.on_deal_cerrado();
+for each row execute function signal_iq.on_deal_actualizado();
 
 -- ============================================
 -- JOB PROGRAMADO: recalcular frustración por caída de actividad (capa 1) +

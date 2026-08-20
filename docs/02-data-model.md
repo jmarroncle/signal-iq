@@ -157,13 +157,29 @@ create index contactos_proyecto_tipo_idx on signal_iq.contactos (project_id, tip
 create index contactos_custom_fields_idx on signal_iq.contactos using gin (custom_fields);
 
 -- ============================================
--- DEALS
+-- PIPELINES — un proyecto puede tener más de un pipeline a la vez (ej. Loyalty
+-- como principal + Ventas como secundario). Cada uno define sus propias etapas
+-- ============================================
+create table signal_iq.pipelines (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references signal_iq.projects(id) not null,
+  nombre text not null,
+  tipo text check (tipo in ('loyalty','ventas','custom')) not null,
+  es_principal boolean default false, -- cuál se abre por default en el kanban
+  etapas jsonb not null, -- [{label, tipo: 'abierta'|'ganado'|'perdido'}, ...]
+  orden int default 0
+);
+create index pipelines_proyecto_idx on signal_iq.pipelines (project_id);
+
+-- ============================================
+-- DEALS — la posición de un contacto DENTRO de un pipeline específico
 -- ============================================
 create table signal_iq.deals (
   id uuid primary key default gen_random_uuid(),
   contacto_id uuid references signal_iq.contactos(id) not null,
   project_id uuid references signal_iq.projects(id) not null,
-  etapa text not null,      -- label libre, viene de esquema_config.entidades.deal.etapas_pipeline
+  pipeline_id uuid references signal_iq.pipelines(id) not null,
+  etapa text not null,      -- label libre, viene de pipelines.etapas
   etapa_tipo text check (etapa_tipo in ('abierta','ganado','perdido')) default 'abierta',
   valor numeric,
   probabilidad numeric,     -- 0-100, sincronizada por trigger desde contacto_scores — nunca manual
@@ -172,7 +188,7 @@ create table signal_iq.deals (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
-create index deals_proyecto_etapa_idx on signal_iq.deals (project_id, etapa); -- kanban
+create index deals_proyecto_etapa_idx on signal_iq.deals (project_id, pipeline_id, etapa); -- kanban
 create index deals_contacto_idx on signal_iq.deals (contacto_id);
 create index deals_custom_fields_idx on signal_iq.deals using gin (custom_fields);
 
@@ -378,9 +394,27 @@ from signal_iq.deals d;
 | Vista | De dónde sale |
 |---|---|
 | **Contactos** (tabla filtrable) | `select * from contactos where project_id = $1` con filtros sobre `current_classification`, `tipo`, `current_score`, `current_frustration_index` — todos indexados |
-| **Pipeline kanban** | `select * from deals where project_id = $1 group by etapa` — columnas = valores distintos de `etapa` (definidos en `esquema_config.entidades.deal.etapas_pipeline`) |
+| **Pipeline kanban** | `select * from deals where pipeline_id = $1 group by etapa` — columnas = las `etapas` definidas en `pipelines`. El proyecto puede tener más de un pipeline (`es_principal` decide cuál se abre por default — ver más abajo) |
 | **Actividad global** | `select * from actividad_global where project_id = $1 and ocurrido_en >= current_date order by ocurrido_en desc` |
-| **Ficha de contacto** | `contactos` (fila) + `contacto_scores`/`frustration_scores` (última fila, para el desglose) + `fragmentos_voc` (historial VOC) + `comb_gaps` (join por el tag dominante activo → acción recomendada) |
+| **Ficha de contacto** | `contactos` (fila) + `contacto_scores`/`frustration_scores` (última fila, para el desglose) + `fragmentos_voc` (historial VOC) + `comb_gaps` (join por el tag dominante activo → acción recomendada) + `deals` del contacto en cada pipeline |
+
+### Loyalty como pipeline principal
+
+Un mismo contacto puede tener una fila en `deals` por cada pipeline en el que
+participa — no es "uno o el otro". El flujo típico: un contacto avanza por el
+pipeline de **Ventas** (`Webinar asistido → Interesado → Propuesta enviada →
+Invertido`), y al llegar a `Invertido` (etapa_tipo `ganado`) se crea una fila
+nueva para ese mismo contacto en el pipeline de **Loyalty** (`Cliente activo →
+En riesgo de churn → Reactivado → Embajador`), donde vive el resto de su
+relación con el negocio. `ganado`/`perdido` en loyalty no significan "cerró una
+venta" — significan el mejor y el peor desenlace posibles de la relación
+(`Embajador` = `ganado`, `Perdido/Churn` = `perdido`); el resto de las etapas
+son `abierta`, incluso pudiendo ir y volver entre ellas (a diferencia de ventas,
+loyalty no es un funnel que solo avanza).
+
+Mover una tarjeta de etapa en cualquier pipeline dispara el motor de
+Touchpoints (`docs/08`) — es lo que permite que "mover a `En riesgo de churn`"
+dispare automáticamente una notificación, sin ningún paso manual extra.
 
 ## RLS (Row Level Security)
 

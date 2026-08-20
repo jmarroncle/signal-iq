@@ -22,6 +22,8 @@ hora, y qué pasa con un trigger que quedó pendiente y ya no tiene sentido envi
   "tipo_contacto": null,
   "tags_requeridos": ["intencion_compra"],
   "custom_fields_match": { "perfil_riesgo": "Agresivo" },
+  "pipeline_tipo": "loyalty",
+  "etapa": "En riesgo de churn",
   "cooldown_dias": 7
 }
 ```
@@ -39,7 +41,13 @@ builder de v2 va a permitir y v1 no).
 | `tipo_contacto` | `nuevo` / `recurrente` |
 | `tags_requeridos` | el contacto tuvo un fragmento VOC con alguno de estos tags en los últimos 30 días |
 | `custom_fields_match` | match exacto contra `contactos.custom_fields` (los campos que definió el Constructor de Panel) — reutiliza el índice GIN que ya existe, sin tablas nuevas |
+| `pipeline_tipo` / `etapa` | el contacto tiene un deal en un pipeline de ese tipo (`loyalty`/`ventas`/`custom`), opcionalmente en esa etapa exacta — esto es lo que conecta el kanban con las notificaciones (`docs/02`, sección "Loyalty como pipeline principal") |
 | `cooldown_dias` | mínimo de días entre dos disparos del mismo touchpoint al mismo contacto |
+
+**Canales:** `email`, `whatsapp`, `sms`, `push` — el canal `push` es el que
+usa el caso de loyalty ("le bajó el score a un cliente activo → push de
+retención"), no requiere nada distinto del resto, es un valor más de
+`touchpoints.channel`.
 
 ## Motor de evaluación
 
@@ -91,6 +99,14 @@ begin
                and f.ocurrido_en > now() - interval '30 days'
                and f.tag_semantico in (select jsonb_array_elements_text(t.trigger_conditions->'tags_requeridos'))
            ))
+      and (t.trigger_conditions->>'pipeline_tipo' is null
+           or exists (
+             select 1 from signal_iq.deals d
+             join signal_iq.pipelines p on p.id = d.pipeline_id
+             where d.contacto_id = p_contacto_id
+               and p.tipo = t.trigger_conditions->>'pipeline_tipo'
+               and (t.trigger_conditions->>'etapa' is null or d.etapa = t.trigger_conditions->>'etapa')
+           ))
       and not exists (
         select 1 from signal_iq.touchpoint_triggers tt
         where tt.contacto_id = p_contacto_id
@@ -135,8 +151,14 @@ Un trigger queda obsoleto en dos casos:
 2. **Pasaron más de 48hs sin enviarse** — probablemente el webhook saliente
    falló; mandarlo tarde puede ser peor que no mandarlo.
 
+El mismo trigger que descarta lo obsoleto también es el que **conecta el
+kanban con las notificaciones**: cualquier cambio de etapa (no solo un cierre)
+vuelve a evaluar los touchpoints del contacto — así mover una tarjeta de
+"Cliente activo" a "En riesgo de churn" en el pipeline de Loyalty puede
+disparar un push de retención sin ningún paso manual extra:
+
 ```sql
-create or replace function signal_iq.on_deal_cerrado()
+create or replace function signal_iq.on_deal_actualizado()
 returns trigger as $$
 begin
   if new.etapa_tipo in ('ganado','perdido') and old.etapa_tipo = 'abierta' then
@@ -144,13 +166,18 @@ begin
     set status = 'skipped'
     where contacto_id = new.contacto_id and status = 'pending';
   end if;
+
+  if new.etapa is distinct from old.etapa then
+    perform signal_iq.evaluar_touchpoints_contacto(new.contacto_id);
+  end if;
+
   return new;
 end;
 $$ language plpgsql;
 
-create trigger trg_on_deal_cerrado
+create trigger trg_on_deal_actualizado
 after update on signal_iq.deals
-for each row execute function signal_iq.on_deal_cerrado();
+for each row execute function signal_iq.on_deal_actualizado();
 ```
 
 El caso 2 se resuelve con el mismo job de `pg_cron` que ya corre cada hora para
@@ -216,6 +243,13 @@ insert into signal_iq.touchpoints (project_id, name, channel, comb_gap_id, templ
   'klaviyo-tpl-nutricion-warm',
   '{"clasificacion": ["WARM"], "cooldown_dias": 10}'::jsonb,
   10
+),
+(
+  :project_id, 'Retención: en riesgo de churn', 'push',
+  null,
+  'push-tpl-retencion',
+  '{"pipeline_tipo": "loyalty", "etapa": "En riesgo de churn", "cooldown_dias": 14}'::jsonb,
+  50
 );
 ```
 
@@ -223,4 +257,7 @@ Con esto: un contacto WARM que además manda un mensaje con `riesgo_legal` va a
 disparar el touchpoint de rescate legal (priority 30) **en vez de** la nutrición
 genérica (priority 10) — mismo canal (email), gana el de mayor prioridad — y si
 además es HOT con `intencion_compra`, dispara el WhatsApp de contacto directo en
-paralelo, porque es un canal distinto.
+paralelo, porque es un canal distinto. Y si alguien en el kanban de Loyalty se
+mueve a "En riesgo de churn" (manual, desde la UI, o porque un proceso externo
+lo detecta), el push de retención se dispara solo — no compite por canal con
+ninguno de los otros tres, así que puede convivir con cualquiera de ellos.

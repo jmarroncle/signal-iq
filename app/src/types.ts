@@ -67,13 +67,36 @@ export interface CombGap {
   polaridad_score: number | null
 }
 
+export type EtapaTipo = 'abierta' | 'ganado' | 'perdido'
+
+export interface EtapaPipeline {
+  label: string
+  tipo: EtapaTipo
+}
+
+export interface Pipeline {
+  id: string
+  project_id: string
+  nombre: string
+  tipo: 'loyalty' | 'ventas' | 'custom'
+  es_principal: boolean
+  etapas: EtapaPipeline[]
+  orden: number
+}
+
 export interface Deal {
   id: string
   contacto_id: string
   project_id: string
+  pipeline_id: string
   etapa: string
-  etapa_tipo: 'abierta' | 'ganado' | 'perdido'
+  etapa_tipo: EtapaTipo
   valor: number | null
   probabilidad: number | null
   fecha_cierre_estimada: string | null
+}
+
+/** Deal con los datos del contacto ya resueltos, para pintar la tarjeta del kanban sin otro round-trip. */
+export interface DealConContacto extends Deal {
+  contacto: Pick<Contacto, 'id' | 'nombre' | 'email' | 'current_score' | 'current_classification' | 'current_frustration_index'>
 }
