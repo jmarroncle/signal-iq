@@ -1,5 +1,18 @@
 import { supabase } from './supabase'
-import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap, Deal, Pipeline, DealConContacto, ActividadItem, WikiArticle } from '../types'
+import type {
+  Contacto,
+  ContactoScore,
+  FrustrationScore,
+  FragmentoVoc,
+  CombGap,
+  Deal,
+  Pipeline,
+  DealConContacto,
+  ActividadItem,
+  WikiArticle,
+  Touchpoint,
+  TouchpointTriggerConTouchpoint,
+} from '../types'
 
 export async function listarContactos(): Promise<Contacto[]> {
   const { data, error } = await supabase
@@ -167,4 +180,47 @@ export async function obtenerArticuloWiki(slug: string): Promise<WikiArticle> {
   const { data, error } = await supabase.from('wiki_articles').select('*').eq('slug', slug).single()
   if (error) throw error
   return data as WikiArticle
+}
+
+/** App single-tenant por ahora (solo Tutellus) — trae el único proyecto que existe. */
+export async function obtenerProyectoId(): Promise<string> {
+  const { data, error } = await supabase.from('projects').select('id').limit(1).single()
+  if (error) throw error
+  return (data as { id: string }).id
+}
+
+export async function listarTouchpoints(): Promise<Touchpoint[]> {
+  const { data, error } = await supabase.from('touchpoints').select('*').order('priority', { ascending: false })
+  if (error) throw error
+  return data as Touchpoint[]
+}
+
+export async function crearTouchpoint(touchpoint: Omit<Touchpoint, 'id'> & { id?: string }): Promise<void> {
+  const { error } = await supabase.from('touchpoints').insert(touchpoint)
+  if (error) throw error
+}
+
+export async function actualizarTouchpoint(id: string, cambios: Partial<Omit<Touchpoint, 'id'>>): Promise<void> {
+  const { error } = await supabase.from('touchpoints').update(cambios).eq('id', id)
+  if (error) throw error
+}
+
+export async function eliminarTouchpoint(id: string): Promise<void> {
+  const { error } = await supabase.from('touchpoints').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function triggersDeContacto(contactoId: string): Promise<TouchpointTriggerConTouchpoint[]> {
+  const { data, error } = await supabase
+    .from('touchpoint_triggers')
+    .select('*, touchpoint:touchpoints(id, name, channel)')
+    .eq('contacto_id', contactoId)
+    .order('triggered_at', { ascending: false })
+  if (error) throw error
+  return data as unknown as TouchpointTriggerConTouchpoint[]
+}
+
+export async function omitirTrigger(id: string): Promise<void> {
+  const { error } = await supabase.from('touchpoint_triggers').update({ status: 'skipped' }).eq('id', id)
+  if (error) throw error
 }

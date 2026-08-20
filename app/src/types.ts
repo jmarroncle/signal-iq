@@ -122,3 +122,48 @@ export interface WikiArticle {
   contenido_md: string
   metricas_relacionadas: string[] | null
 }
+
+export type CanalTouchpoint = 'email' | 'whatsapp' | 'sms' | 'push'
+
+export interface TriggerConditions {
+  score_min?: number
+  score_max?: number
+  frustration_min?: number
+  frustration_max?: number
+  clasificacion?: Clasificacion[]
+  tipo_contacto?: TipoContacto
+  tags_requeridos?: string[]
+  custom_fields_match?: Record<string, unknown>
+  pipeline_tipo?: 'loyalty' | 'ventas' | 'custom'
+  etapa?: string
+  cooldown_dias?: number
+}
+
+export interface Touchpoint {
+  id: string
+  project_id: string
+  name: string
+  channel: CanalTouchpoint
+  comb_gap_id: string | null
+  template_ref: string | null
+  trigger_conditions: TriggerConditions | null
+  priority: number
+  activo: boolean
+}
+
+export type EstadoTrigger = 'pending' | 'sent' | 'skipped'
+
+export interface TouchpointTrigger {
+  id: string
+  contacto_id: string
+  project_id: string
+  touchpoint_id: string
+  reason: Record<string, unknown> | null
+  status: EstadoTrigger
+  triggered_at: string
+  sent_at: string | null
+}
+
+export interface TouchpointTriggerConTouchpoint extends TouchpointTrigger {
+  touchpoint: Pick<Touchpoint, 'id' | 'name' | 'channel'>
+}

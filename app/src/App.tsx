@@ -5,6 +5,7 @@ import { FichaContactoPage } from './pages/FichaContactoPage'
 import { PipelinePage } from './pages/PipelinePage'
 import { ActividadGlobalPage } from './pages/ActividadGlobalPage'
 import { WikiArticlePage } from './pages/WikiArticlePage'
+import { TouchpointsPage } from './pages/TouchpointsPage'
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <NavItem to="/contactos">Contactos</NavItem>
             <NavItem to="/pipeline">Pipeline</NavItem>
             <NavItem to="/actividad">Actividad</NavItem>
+            <NavItem to="/touchpoints">Touchpoints</NavItem>
           </nav>
         </header>
         <Routes>
@@ -43,6 +45,7 @@ export default function App() {
           <Route path="/pipeline" element={<PipelinePage />} />
           <Route path="/actividad" element={<ActividadGlobalPage />} />
           <Route path="/wiki/:slug" element={<WikiArticlePage />} />
+          <Route path="/touchpoints" element={<TouchpointsPage />} />
         </Routes>
       </div>
     </BrowserRouter>

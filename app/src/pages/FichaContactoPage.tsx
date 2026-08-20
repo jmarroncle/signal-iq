@@ -7,8 +7,10 @@ import {
   historialFrustracion,
   fragmentosVoc,
   combGaps,
+  triggersDeContacto,
+  omitirTrigger,
 } from '../lib/queries'
-import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap } from '../types'
+import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap, TouchpointTriggerConTouchpoint } from '../types'
 import { ClasificacionBadge } from '../components/ClasificacionBadge'
 import { Medidor } from '../components/Medidor'
 import { InfoLink } from '../components/InfoLink'
@@ -20,7 +22,12 @@ export function FichaContactoPage() {
   const [frustracion, setFrustracion] = useState<FrustrationScore[]>([])
   const [voc, setVoc] = useState<FragmentoVoc[]>([])
   const [gaps, setGaps] = useState<CombGap[]>([])
+  const [triggers, setTriggers] = useState<TouchpointTriggerConTouchpoint[]>([])
   const [error, setError] = useState<string | null>(null)
+
+  function cargarTriggers(contactoId: string) {
+    triggersDeContacto(contactoId).then(setTriggers).catch((e) => setError(e.message))
+  }
 
   useEffect(() => {
     if (!id) return
@@ -39,6 +46,7 @@ export function FichaContactoPage() {
         setGaps(g)
       })
       .catch((e) => setError(e.message))
+    cargarTriggers(id)
   }, [id])
 
   if (error) return <div className="p-8 text-red-400">Error: {error}</div>
@@ -54,6 +62,14 @@ export function FichaContactoPage() {
     : voc[0]
       ? gaps.find((g) => g.voc_tag === voc[0].tag_semantico)
       : undefined
+
+  const pendientes = triggers.filter((t) => t.status === 'pending')
+  const historial = triggers.filter((t) => t.status !== 'pending')
+
+  async function descartar(triggerId: string) {
+    await omitirTrigger(triggerId)
+    if (id) cargarTriggers(id)
+  }
 
   return (
     <div className="mx-auto max-w-4xl p-8">
@@ -117,6 +133,42 @@ export function FichaContactoPage() {
             Brecha detectada: <strong>{gapActivo.comb_dimension}</strong> ({gapActivo.gap_description})
           </p>
           <p className="mt-1 text-sm text-slate-400">{gapActivo.recommended_nudge}</p>
+        </section>
+      )}
+
+      {(pendientes.length > 0 || historial.length > 0) && (
+        <section className="mb-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Próxima automatización</h2>
+          {pendientes.length === 0 ? (
+            <p className="mb-3 text-sm text-slate-500">Nada pendiente de enviar.</p>
+          ) : (
+            <ul className="mb-3 space-y-2">
+              {pendientes.map((t) => (
+                <li key={t.id} className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+                  <span>
+                    <strong>{t.touchpoint.name}</strong> · {t.touchpoint.channel} · pendiente desde{' '}
+                    {new Date(t.triggered_at).toLocaleString('es-AR')}
+                  </span>
+                  <button onClick={() => descartar(t.id)} className="text-xs text-slate-400 hover:text-slate-200">
+                    Descartar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {historial.length > 0 && (
+            <details className="text-sm text-slate-500">
+              <summary className="cursor-pointer">Historial ({historial.length})</summary>
+              <ul className="mt-2 space-y-1">
+                {historial.map((t) => (
+                  <li key={t.id}>
+                    {t.touchpoint.name} · {t.touchpoint.channel} · <span className="uppercase">{t.status}</span> ·{' '}
+                    {new Date(t.triggered_at).toLocaleString('es-AR')}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </section>
       )}
 
