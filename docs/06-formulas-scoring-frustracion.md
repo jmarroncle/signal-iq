@@ -407,6 +407,21 @@ end;
 $$ language plpgsql;
 ```
 
+### ⚠️ `clock_timestamp()`, no `now()`, en las columnas de historial
+
+`contacto_scores.computed_at`, `frustration_scores.computed_at` y
+`touchpoint_triggers.triggered_at` usan `default clock_timestamp()`, no
+`default now()`. La diferencia importa acá: `now()` devuelve el mismo valor
+durante **toda una transacción** — y una sola corrida de eventos (por ejemplo
+el seed de datos de prueba, o varios eventos que llegan juntos desde Segment)
+puede disparar varios recálculos en cascada dentro de la misma transacción.
+Con `now()`, esas filas quedan con el **timestamp idéntico**, y un `order by
+computed_at desc limit 1` para traer "el último score" no tiene con qué
+desempatar — Postgres puede devolver cualquiera de las filas empatadas, no
+necesariamente la más reciente en el tiempo real. `clock_timestamp()` sí
+avanza en cada llamada dentro de la misma transacción, así que el orden
+siempre refleja lo que realmente pasó primero.
+
 ## Cuándo se recalcula
 
 ```sql

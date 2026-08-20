@@ -176,7 +176,10 @@ create table signal_iq.contacto_scores (
   total_score numeric not null,
   classification text check (classification in ('HOT','WARM','COLD')) not null,
   inputs_snapshot jsonb,
-  computed_at timestamptz default now()
+  computed_at timestamptz default clock_timestamp() -- NO now(): now() queda fijo durante toda
+    -- la transacción, y una sola corrida de eventos/VOC puede disparar varios recálculos
+    -- en cascada -- con now() todas esas filas empatan en el mismo timestamp y "traeme
+    -- la última" queda indefinido. clock_timestamp() sí avanza en cada llamada.
 );
 create index contacto_scores_contacto_tiempo_idx on signal_iq.contacto_scores (contacto_id, computed_at desc);
 
@@ -192,7 +195,7 @@ create table signal_iq.frustration_scores (
   capa3_voc numeric,
   frustration_index numeric not null,
   alert_triggered boolean default false,
-  computed_at timestamptz default now()
+  computed_at timestamptz default clock_timestamp() -- ver nota en contacto_scores
 );
 create index frustration_contacto_tiempo_idx on signal_iq.frustration_scores (contacto_id, computed_at desc);
 
@@ -219,7 +222,7 @@ create table signal_iq.touchpoint_triggers (
   touchpoint_id uuid references signal_iq.touchpoints(id) not null,
   reason jsonb,
   status text check (status in ('pending','sent','skipped')) default 'pending',
-  triggered_at timestamptz default now(),
+  triggered_at timestamptz default clock_timestamp(), -- ver nota en contacto_scores
   sent_at timestamptz
 );
 create index touchpoint_triggers_status_idx on signal_iq.touchpoint_triggers (status);
