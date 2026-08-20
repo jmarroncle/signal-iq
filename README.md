@@ -30,15 +30,23 @@ recomendación conductual accionable en una sola vista — con o sin CRM propio.
 
 ## Documentación
 
-- [`docs/01-mvp-scope.md`](docs/01-mvp-scope.md) — qué entra en v1.0 y qué queda para v2, y por qué
-- [`docs/02-data-model.md`](docs/02-data-model.md) — modelo de datos completo en Supabase
-- [`docs/03-api-endpoints.md`](docs/03-api-endpoints.md) — endpoints v1
-- [`docs/04-constructor-panel-onboarding.md`](docs/04-constructor-panel-onboarding.md) — flujo de onboarding pantalla a pantalla
-- [`docs/05-modo-chat-claude.md`](docs/05-modo-chat-claude.md) — implementación del Modo Chat con la API de Claude
-- [`docs/06-formulas-scoring-frustracion.md`](docs/06-formulas-scoring-frustracion.md) — fórmulas del Lead Score y el Frustration Index, funciones SQL y cuándo se recalculan
-- [`docs/07-wiki-metricas.md`](docs/07-wiki-metricas.md) — wiki in-app: qué es cada métrica y por qué importa para el negocio
-- [`docs/08-touchpoints-automatizacion.md`](docs/08-touchpoints-automatizacion.md) — motor de evaluación de touchpoints, cooldown, ciclo de vida de los triggers
-- [`docs/09-matematica-del-modelo.md`](docs/09-matematica-del-modelo.md) — los conceptos matemáticos detrás de todo el proyecto, explicados una vez con intuición y ejemplos
+Organizada según [Diátaxis](https://diataxis.fr/): **Reference** (el detalle
+técnico exacto), **Explanation** (el por qué), **How-to** (resolver algo
+puntual), **Tutorial** (onboarding de cero — no existe todavía, no hizo falta
+hasta ahora).
+
+| Doc | Tipo | Qué cubre |
+|---|---|---|
+| [`01-mvp-scope.md`](docs/01-mvp-scope.md) | Explanation | Qué entra en v1.0 y qué queda para v2, y por qué |
+| [`02-data-model.md`](docs/02-data-model.md) | Reference | Modelo de datos completo en Supabase |
+| [`03-api-endpoints.md`](docs/03-api-endpoints.md) | Reference | Endpoints v1 |
+| [`04-constructor-panel-onboarding.md`](docs/04-constructor-panel-onboarding.md) | Reference | Flujo de onboarding pantalla a pantalla |
+| [`05-modo-chat-claude.md`](docs/05-modo-chat-claude.md) | Reference | Implementación del Modo Chat con la API de Claude |
+| [`06-formulas-scoring-frustracion.md`](docs/06-formulas-scoring-frustracion.md) | Reference | Fórmulas del Lead Score y el Frustration Index, funciones SQL y cuándo se recalculan |
+| [`07-wiki-metricas.md`](docs/07-wiki-metricas.md) | Reference | Wiki in-app: qué es cada métrica y por qué importa para el negocio |
+| [`08-touchpoints-automatizacion.md`](docs/08-touchpoints-automatizacion.md) | Reference | Motor de evaluación de touchpoints, cooldown, ciclo de vida de los triggers |
+| [`09-matematica-del-modelo.md`](docs/09-matematica-del-modelo.md) | Explanation | Los conceptos matemáticos detrás de todo el proyecto, con intuición y ejemplos |
+| [`10-como-operar.md`](docs/10-como-operar.md) | How-to | Migraciones, exponer schemas/tablas en Supabase, cargar seeds, errores comunes |
 
 ## Stack
 
@@ -55,6 +63,7 @@ recomendación conductual accionable en una sola vista — con o sin CRM propio.
 
 - ✅ MVP, modelo de datos, fórmulas y flujos de onboarding diseñados (`docs/`)
 - ✅ Schema corrido en Supabase ("Behavioral platform", schema `signal_iq`) — tablas, funciones, triggers y seeds en producción
-- ⬜ Frontend — no hay UI todavía
-- ⬜ Backend/API (los endpoints de `03-api-endpoints.md` son spec, no código)
-- ⬜ Integraciones (Segment, Klaviyo/Wati, `pg_cron`)
+- ✅ Frontend MVP (`app/`) — Contactos, Ficha de Contacto, Pipeline (Loyalty + Ventas), verificado en vivo contra datos reales
+- ⬜ Pipeline kanban: falta Actividad global, VOC Explorer, Wiki UI, config de Touchpoints, Dashboard, Constructor de Panel
+- ⬜ Backend/API real (los endpoints de `03-api-endpoints.md` son spec, no código — el frontend habla directo con Supabase)
+- ⬜ Integraciones (Segment, Klaviyo/Wati, `pg_cron`), auth/login, deploy público
