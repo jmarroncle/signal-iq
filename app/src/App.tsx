@@ -7,6 +7,7 @@ import { ActividadGlobalPage } from './pages/ActividadGlobalPage'
 import { WikiArticlePage } from './pages/WikiArticlePage'
 import { TouchpointsPage } from './pages/TouchpointsPage'
 import { VocExplorerPage } from './pages/VocExplorerPage'
+import { ConstructorPanelPage } from './pages/ConstructorPanelPage'
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -38,6 +39,7 @@ export default function App() {
             <NavItem to="/actividad">Actividad</NavItem>
             <NavItem to="/voc">VOC Explorer</NavItem>
             <NavItem to="/touchpoints">Touchpoints</NavItem>
+            <NavItem to="/constructor-panel">Constructor de Panel</NavItem>
           </nav>
         </header>
         <Routes>
@@ -49,6 +51,7 @@ export default function App() {
           <Route path="/wiki/:slug" element={<WikiArticlePage />} />
           <Route path="/touchpoints" element={<TouchpointsPage />} />
           <Route path="/voc" element={<VocExplorerPage />} />
+          <Route path="/constructor-panel" element={<ConstructorPanelPage />} />
         </Routes>
       </div>
     </BrowserRouter>

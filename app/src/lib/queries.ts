@@ -13,6 +13,9 @@ import type {
   WikiArticle,
   Touchpoint,
   TouchpointTriggerConTouchpoint,
+  EsquemaTemplate,
+  EsquemaConfig,
+  Proyecto,
 } from '../types'
 
 export async function listarContactos(): Promise<Contacto[]> {
@@ -255,5 +258,22 @@ export async function crearFragmentoVoc(payload: NuevoFragmentoVoc): Promise<voi
     ocurrido_en: new Date().toISOString(),
     clasificado_en: payload.tag_semantico ? new Date().toISOString() : null,
   })
+  if (error) throw error
+}
+
+export async function listarEsquemaTemplates(): Promise<EsquemaTemplate[]> {
+  const { data, error } = await supabase.from('esquema_templates').select('*').order('orden')
+  if (error) throw error
+  return data as unknown as EsquemaTemplate[]
+}
+
+export async function obtenerProyecto(): Promise<Proyecto> {
+  const { data, error } = await supabase.from('projects').select('id, name, slug, esquema_config').limit(1).single()
+  if (error) throw error
+  return data as unknown as Proyecto
+}
+
+export async function actualizarEsquemaConfig(projectId: string, esquemaConfig: EsquemaConfig): Promise<void> {
+  const { error } = await supabase.from('projects').update({ esquema_config: esquemaConfig }).eq('id', projectId)
   if (error) throw error
 }

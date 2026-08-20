@@ -171,3 +171,46 @@ export interface TouchpointTriggerConTouchpoint extends TouchpointTrigger {
 export interface FragmentoVocConContacto extends FragmentoVoc {
   contacto: Pick<Contacto, 'id' | 'nombre' | 'email'>
 }
+
+export type TipoCampoCustom = 'texto' | 'numero' | 'fecha' | 'booleano' | 'seleccion'
+
+export interface CampoCustom {
+  clave: string
+  etiqueta: string
+  tipo: TipoCampoCustom
+  opciones?: string[]
+}
+
+export interface EtapaEsquema {
+  label: string
+  tipo: EtapaTipo
+}
+
+export interface EsquemaConfig {
+  tipo_negocio: string
+  generado_por: 'chat' | 'selector'
+  terminologia: { contacto: string; deal: string }
+  entidades: {
+    contacto: { campos_custom: CampoCustom[] }
+    deal: { etapas_pipeline: EtapaEsquema[]; campos_custom: CampoCustom[] }
+    evento: { canales_sugeridos: string[]; tipos_evento_sugeridos: string[] }
+    fragmento_voc: { tags_custom: string[] }
+  }
+}
+
+export interface EsquemaTemplate {
+  id: string
+  slug: string
+  nombre: string
+  descripcion: string | null
+  icono: string | null
+  esquema_config: EsquemaConfig
+  orden: number
+}
+
+export interface Proyecto {
+  id: string
+  name: string
+  slug: string
+  esquema_config: EsquemaConfig | Record<string, never>
+}
