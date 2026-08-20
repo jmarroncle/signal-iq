@@ -11,6 +11,7 @@ import {
 import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap } from '../types'
 import { ClasificacionBadge } from '../components/ClasificacionBadge'
 import { Medidor } from '../components/Medidor'
+import { InfoLink } from '../components/InfoLink'
 
 export function FichaContactoPage() {
   const { id } = useParams<{ id: string }>()
@@ -73,8 +74,9 @@ export function FichaContactoPage() {
 
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         <section className="rounded-lg border border-slate-800 p-5">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-4 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-400">
             Lead Score — {ultimoScore ? Math.round(ultimoScore.total_score) : '—'}
+            <InfoLink slug="lead-score" titulo="el Lead Score" />
           </h2>
           {ultimoScore ? (
             <div className="space-y-3">
@@ -89,8 +91,9 @@ export function FichaContactoPage() {
         </section>
 
         <section className="rounded-lg border border-slate-800 p-5">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-4 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-400">
             Índice de Frustración — {ultimaFrustracion ? Math.round(ultimaFrustracion.frustration_index) : '—'}
+            <InfoLink slug="frustration-index" titulo="el Índice de Frustración" />
           </h2>
           {ultimaFrustracion ? (
             <div className="space-y-3">
@@ -106,8 +109,9 @@ export function FichaContactoPage() {
 
       {gapActivo && (
         <section className="mb-8 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-5">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-400">
+          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-emerald-400">
             Acción recomendada
+            <InfoLink slug="com-b" titulo="el modelo COM-B" />
           </h2>
           <p className="text-sm text-slate-300">
             Brecha detectada: <strong>{gapActivo.comb_dimension}</strong> ({gapActivo.gap_description})

@@ -113,3 +113,12 @@ export interface ActividadItem {
   canal: string | null
   detalle: string | null
 }
+
+export interface WikiArticle {
+  id: string
+  slug: string
+  titulo: string
+  categoria: string | null
+  contenido_md: string
+  metricas_relacionadas: string[] | null
+}

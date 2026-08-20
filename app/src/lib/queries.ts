@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap, Deal, Pipeline, DealConContacto, ActividadItem } from '../types'
+import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap, Deal, Pipeline, DealConContacto, ActividadItem, WikiArticle } from '../types'
 
 export async function listarContactos(): Promise<Contacto[]> {
   const { data, error } = await supabase
@@ -161,4 +161,10 @@ export async function obtenerResumenDashboard(): Promise<ResumenDashboard> {
     .slice(0, 5)
 
   return { total, hot, warm, cold, sinScore, frustracionPromedio, contactosEnRiesgo, topTags }
+}
+
+export async function obtenerArticuloWiki(slug: string): Promise<WikiArticle> {
+  const { data, error } = await supabase.from('wiki_articles').select('*').eq('slug', slug).single()
+  if (error) throw error
+  return data as WikiArticle
 }
