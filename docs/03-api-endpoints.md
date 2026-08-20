@@ -15,10 +15,23 @@ unifica antes de llegar a Supabase.
 | `GET` | `/voc/explorer` | Busca/filtra fragmentos VOC por tag, sentiment, fecha — potencia el VOC Explorer | Frontend |
 | `GET` / `POST` | `/comb-gaps` | Lee y edita la tabla de mapeo VOC→COM-B→nudge (config del equipo) | Frontend (panel de admin) |
 | `GET` | `/frustration/alerts` | Feed de alertas activas sin reconocer | Frontend / integración con Slack o email |
-| `GET` | `/touchpoints/pending` | Lista triggers en estado `pending` para que Klaviyo/Wati los levanten | Zapier / webhook saliente de Supabase |
 | `GET` | `/dashboard/summary` | Agregados: conteo HOT/WARM/COLD, promedio de frustración, tags VOC más frecuentes | Frontend |
 | `GET` | `/wiki` | Lista los artículos de la wiki por categoría | Frontend |
 | `GET` | `/wiki/:slug` | Artículo puntual — es lo que abre el ícono "?" contextual junto a un score o al índice de frustración en la ficha de contacto | Frontend |
+
+## Endpoints de Touchpoints y Automatización
+
+Detalle completo del motor de evaluación (condiciones, cooldown, ciclo de vida)
+en [`08-touchpoints-automatizacion.md`](08-touchpoints-automatizacion.md).
+
+| Método | Endpoint | Qué hace | Quién lo llama |
+|---|---|---|---|
+| `GET` | `/touchpoints` | Lista los touchpoints configurados del proyecto | Frontend (pantalla de config) |
+| `POST` | `/touchpoints` | Crea un touchpoint (name, channel, comb_gap_id, template_ref, trigger_conditions, priority) | Frontend |
+| `PATCH` | `/touchpoints/:id` | Edita condiciones o activa/pausa (`activo`) sin borrar | Frontend |
+| `GET` | `/touchpoints/pending` | Fallback de reconciliación si el webhook saliente falló — el mecanismo primario es el DB webhook (ver abajo) | Zapier |
+| `POST` | `/webhooks/touchpoint-sent` | Callback de Zapier/Klaviyo confirmando el envío real → `status='sent'` | Zapier |
+| `POST` | `/touchpoint-triggers/:id/skip` | Descarte manual desde la ficha de contacto | Frontend |
 
 ## Endpoints del Constructor de Panel (onboarding)
 

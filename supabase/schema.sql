@@ -206,8 +206,11 @@ create table signal_iq.touchpoints (
   channel text check (channel in ('email','whatsapp','sms')) not null,
   comb_gap_id uuid references signal_iq.comb_gaps(id),
   template_ref text,
-  trigger_conditions jsonb
+  trigger_conditions jsonb,
+  priority int default 0, -- desempate cuando varios touchpoints matchean en el mismo canal a la vez
+  activo boolean default true -- pausar sin borrar
 );
+create index touchpoints_proyecto_activo_idx on signal_iq.touchpoints (project_id, activo);
 
 create table signal_iq.touchpoint_triggers (
   id uuid primary key default gen_random_uuid(),
@@ -868,7 +871,64 @@ end;
 $$ language plpgsql;
 
 -- ============================================
--- TRIGGERS: cuándo se recalcula
+-- FUNCIÓN: motor de evaluación de touchpoints (docs/08-touchpoints-automatizacion.md)
+-- ============================================
+create or replace function signal_iq.evaluar_touchpoints_contacto(p_contacto_id uuid)
+returns void as $$
+declare
+  v_contacto signal_iq.contactos%rowtype;
+begin
+  select * into v_contacto from signal_iq.contactos where id = p_contacto_id;
+
+  insert into signal_iq.touchpoint_triggers (contacto_id, project_id, touchpoint_id, reason, status)
+  select p_contacto_id, v_contacto.project_id, t.id,
+    jsonb_build_object(
+      'score', v_contacto.current_score,
+      'clasificacion', v_contacto.current_classification,
+      'frustracion', v_contacto.current_frustration_index,
+      'evaluado_en', now()
+    ),
+    'pending'
+  from (
+    select t.*,
+      row_number() over (partition by t.channel order by t.priority desc) as rn
+    from signal_iq.touchpoints t
+    where t.project_id = v_contacto.project_id
+      and t.activo
+      and (t.trigger_conditions->>'score_min' is null
+           or v_contacto.current_score >= (t.trigger_conditions->>'score_min')::numeric)
+      and (t.trigger_conditions->>'score_max' is null
+           or v_contacto.current_score <= (t.trigger_conditions->>'score_max')::numeric)
+      and (t.trigger_conditions->>'frustration_min' is null
+           or coalesce(v_contacto.current_frustration_index, 0) >= (t.trigger_conditions->>'frustration_min')::numeric)
+      and (t.trigger_conditions->>'frustration_max' is null
+           or coalesce(v_contacto.current_frustration_index, 0) <= (t.trigger_conditions->>'frustration_max')::numeric)
+      and (t.trigger_conditions->'clasificacion' is null
+           or t.trigger_conditions->'clasificacion' ? v_contacto.current_classification)
+      and (t.trigger_conditions->>'tipo_contacto' is null
+           or v_contacto.tipo = t.trigger_conditions->>'tipo_contacto')
+      and (t.trigger_conditions->'custom_fields_match' is null
+           or v_contacto.custom_fields @> (t.trigger_conditions->'custom_fields_match'))
+      and (t.trigger_conditions->'tags_requeridos' is null
+           or exists (
+             select 1 from signal_iq.fragmentos_voc f
+             where f.contacto_id = p_contacto_id
+               and f.ocurrido_en > now() - interval '30 days'
+               and f.tag_semantico in (select jsonb_array_elements_text(t.trigger_conditions->'tags_requeridos'))
+           ))
+      and not exists (
+        select 1 from signal_iq.touchpoint_triggers tt
+        where tt.contacto_id = p_contacto_id
+          and tt.touchpoint_id = t.id
+          and tt.triggered_at > now() - (coalesce((t.trigger_conditions->>'cooldown_dias')::int, 7) || ' days')::interval
+      )
+  ) t
+  where t.rn = 1; -- como mucho un touchpoint por canal por evaluación, el de mayor priority
+end;
+$$ language plpgsql;
+
+-- ============================================
+-- TRIGGERS: cuándo se recalcula (score, frustración, touchpoints)
 -- ============================================
 create or replace function signal_iq.on_fragmento_voc_clasificado()
 returns trigger as $$
@@ -876,6 +936,7 @@ begin
   if new.clasificado_en is not null and (tg_op = 'INSERT' or old.clasificado_en is null) then
     perform signal_iq.recalcular_score_contacto(new.contacto_id);
     perform signal_iq.recalcular_frustracion_contacto(new.contacto_id);
+    perform signal_iq.evaluar_touchpoints_contacto(new.contacto_id);
   end if;
   return new;
 end;
@@ -891,6 +952,7 @@ begin
   if new.contacto_id is not null then
     perform signal_iq.recalcular_score_contacto(new.contacto_id);
     perform signal_iq.recalcular_frustracion_contacto(new.contacto_id);
+    perform signal_iq.evaluar_touchpoints_contacto(new.contacto_id);
   end if;
   return new;
 end;
@@ -900,18 +962,41 @@ create trigger trg_on_new_evento
 after insert on signal_iq.eventos
 for each row execute function signal_iq.on_new_evento();
 
+-- touchpoints pendientes dejan de tener sentido si el deal ya se cerró
+create or replace function signal_iq.on_deal_cerrado()
+returns trigger as $$
+begin
+  if new.etapa_tipo in ('ganado','perdido') and old.etapa_tipo = 'abierta' then
+    update signal_iq.touchpoint_triggers
+    set status = 'skipped'
+    where contacto_id = new.contacto_id and status = 'pending';
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_on_deal_cerrado
+after update on signal_iq.deals
+for each row execute function signal_iq.on_deal_cerrado();
+
 -- ============================================
--- JOB PROGRAMADO: recalcular frustración por caída de actividad (capa 1)
+-- JOB PROGRAMADO: recalcular frustración por caída de actividad (capa 1) +
+-- descartar touchpoints pendientes que quedaron sin enviar demasiado tiempo.
 -- Ningún trigger detecta la AUSENCIA de eventos nuevos -- hace falta un job
 -- periódico. Requiere la extensión pg_cron habilitada (Database → Extensions
--- en el dashboard de Supabase). Ver docs/06-formulas-scoring-frustracion.md.
+-- en el dashboard de Supabase). Ver docs/06-formulas-scoring-frustracion.md y
+-- docs/08-touchpoints-automatizacion.md.
 -- ============================================
 -- select cron.schedule(
---   'recalcular-frustracion-inactivos',
+--   'signal-iq-mantenimiento-horario',
 --   '0 * * * *', -- cada hora
 --   $$
 --     select signal_iq.recalcular_frustracion_contacto(id)
 --     from signal_iq.contactos
---     where updated_at > now() - interval '30 days'
+--     where updated_at > now() - interval '30 days';
+--
+--     update signal_iq.touchpoint_triggers
+--     set status = 'skipped'
+--     where status = 'pending' and triggered_at < now() - interval '48 hours';
 --   $$
 -- );
