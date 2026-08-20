@@ -61,9 +61,17 @@ hasta ahora).
 
 ## Estado
 
+App pública y funcionando: **[signal-iq-jet.vercel.app](https://signal-iq-jet.vercel.app)**
+(sin login todavía — a propósito, ver más abajo).
+
 - ✅ MVP, modelo de datos, fórmulas y flujos de onboarding diseñados (`docs/`)
 - ✅ Schema corrido en Supabase ("Behavioral platform", schema `signal_iq`) — tablas, funciones, triggers y seeds en producción
-- ✅ Frontend MVP (`app/`) — Contactos, Ficha de Contacto, Pipeline (Loyalty + Ventas), verificado en vivo contra datos reales
-- ⬜ Pipeline kanban: falta Actividad global, VOC Explorer, Wiki UI, config de Touchpoints, Dashboard, Constructor de Panel
-- ⬜ Backend/API real (los endpoints de `03-api-endpoints.md` son spec, no código — el frontend habla directo con Supabase)
-- ⬜ Integraciones (Segment, Klaviyo/Wati, `pg_cron`), auth/login, deploy público
+- ✅ CRM nativo completo (`app/`) — Resumen/Dashboard, Contactos, Ficha de Contacto, Pipeline (Loyalty + Ventas), Actividad global, Wiki in-app
+- ✅ VOC Explorer — feed global de fragmentos VOC con filtros y distribución por brecha COM-B, más carga manual mientras no hay clasificación automática
+- ✅ Touchpoints — CRUD completo de reglas, verificado disparando en vivo desde un cambio de etapa de pipeline
+- ✅ Constructor de Panel — Modo Selector (4 plantillas) con preview editable y pantalla de resumen de la configuración guardada. Modo Chat queda deshabilitado a propósito, para el final (ver abajo)
+- ✅ Deploy público en Vercel
+- 🔶 Backend/API real — **en marcha**: primer bloque migrado (Touchpoints, vía funciones serverless de Vercel en `app/api/`). El resto (Contactos, Deals, VOC, Constructor de Panel) todavía habla directo con Supabase desde el frontend — ver `03-api-endpoints.md` para el mapeo completo pendiente
+- ⬜ Integraciones (Segment, Klaviyo/Wati, `pg_cron`)
+- ⬜ Modo Chat del Constructor de Panel y clasificación VOC automática (ambos necesitan la API key de Claude protegida server-side — dependen de terminar el backend)
+- ⬜ Auth/login y RLS — decisión consciente de dejarlo para el final, para poder iterar rápido sobre el resto de la herramienta sin la fricción de un login

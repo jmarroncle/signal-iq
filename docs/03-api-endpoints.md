@@ -4,6 +4,14 @@ La mayoría de la ingesta entra por **un solo webhook de Segment** — no hace f
 un endpoint por fuente (Klaviyo, Wati, GA4, Typeform), porque Segment ya las
 unifica antes de llegar a Supabase.
 
+**Estado de implementación (2026-08-20):** esto era spec pura hasta que arrancó
+la migración del backend real. Los 4 endpoints de Touchpoints (`GET`/`POST`
+`/touchpoints`, `PATCH`/`DELETE` `/touchpoints/:id`) ya existen como código —
+funciones serverless en `app/api/touchpoints/` — y el frontend los usa en vez
+de hablarle a Supabase directo (ver `10-como-operar.md`). El resto de la tabla
+sigue siendo spec: todavía no tienen código, el frontend sigue llamando a
+Supabase directamente para esas partes.
+
 | Método | Endpoint | Qué hace | Quién lo llama |
 |---|---|---|---|
 | `POST` | `/webhooks/segment` | Recibe eventos de Segment, hace upsert del contacto (por email/id externo), inserta en `eventos`. Si el evento trae texto (form, reply, WhatsApp) dispara clasificación VOC | Segment |

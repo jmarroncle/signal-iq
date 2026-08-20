@@ -115,12 +115,53 @@ Por default corre en `http://localhost:5173`; en esta sesión lo fijamos a
 `5183` con `npm run dev -- --port 5183 --strictPort` para no chocar con otros
 proyectos.
 
+## Backend/API real: funciones serverless de Vercel
+
+Desde el 2026-08-20 arrancó la migración de "frontend habla directo con
+Supabase" a "frontend habla con un backend propio", usando **funciones
+serverless de Vercel** en `app/api/*.ts` — mismo proyecto y deploy que el
+frontend, no hace falta hosting nuevo. Dos gotchas encontrados armando el
+primer bloque (Touchpoints):
+
+### `vercel.json` tiene que excluir `/api/*` del rewrite del SPA
+
+El rewrite que manda todo a `index.html` para que React Router maneje las
+rutas (`/(.*)  → /index.html`) también agarra `/api/*` si no se excluye
+explícitamente — las funciones serverless quedan invisibles, todo devuelve el
+HTML del SPA en vez de JSON. Fix, con lookahead negativo:
+
+```json
+{
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+}
+```
+
+### Los imports relativos dentro de `app/api/` necesitan la extensión `.js`
+
+Con `"type": "module"` en `package.json`, el runtime de Node de Vercel
+resuelve los imports como ESM nativo estricto. `import { x } from '../_lib/foo'`
+(sin extensión) tira `ERR_MODULE_NOT_FOUND` y la función crashea con 500 — hay
+que escribir `from '../_lib/foo.js'` aunque el archivo real sea `.ts`. Esto es
+distinto al resto del proyecto (Vite, en `src/`), donde los imports sin
+extensión funcionan bien — es un comportamiento específico del bundler de
+funciones de Vercel.
+
+### Cómo probar cambios de `vercel.json` o de rutas sin arriesgar producción
+
+`deploy_to_vercel` con `target: "preview"` en vez de `"production"` crea un
+deploy separado que no toca el link público. Los deploys de preview piden
+login de Vercel por default — para probarlos sin login hace falta el tool
+`get_access_to_vercel_url`, que genera un link temporal
+(`?_vercel_share=...`, expira en ~24hs). Una vez confirmado que anda, el mismo
+árbol de archivos se redeploya con `target: "production"`.
+
 ## Otros errores encontrados y su causa
 
 | Síntoma | Causa | Fix |
 |---|---|---|
 | Un número "viejo" en un historial que no coincide con el valor actual mostrado en otra pantalla | `now()` queda fijo durante toda una transacción — varios recálculos en cascada quedan con el mismo timestamp y "traeme el último" no tiene con qué desempatar | Usar `clock_timestamp()` en vez de `now()` en columnas de historial append-only. Detalle completo en `09-matematica-del-modelo.md`, concepto 8 |
 | Un link a un archivo del repo tira 404 en GitHub | El repo es **privado** — 404 es lo que devuelve GitHub a cualquiera que no esté logueado como `jmarroncle`, para no revelar que el repo existe | Confirmar que el navegador tiene sesión iniciada como `jmarroncle`; si no, pedir el contenido directo en el chat en vez de depender del link |
+| Función serverless en `app/api/` devuelve 500 `FUNCTION_INVOCATION_FAILED` | Ver los dos gotchas de arriba (rewrite o import sin `.js`) | Revisar `get_runtime_logs` del deployment — el error real (`ERR_MODULE_NOT_FOUND`, etc.) aparece ahí, la página de error genérica de Vercel no lo muestra |
 
 ## Nota sobre metodología de documentación
 
