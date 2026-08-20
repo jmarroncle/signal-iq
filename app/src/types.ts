@@ -100,3 +100,16 @@ export interface Deal {
 export interface DealConContacto extends Deal {
   contacto: Pick<Contacto, 'id' | 'nombre' | 'email' | 'current_score' | 'current_classification' | 'current_frustration_index'>
 }
+
+export type OrigenActividad = 'evento' | 'voc' | 'deal'
+
+export interface ActividadItem {
+  id: string
+  project_id: string
+  contacto_id: string
+  ocurrido_en: string
+  origen: OrigenActividad
+  tipo: string | null
+  canal: string | null
+  detalle: string | null
+}

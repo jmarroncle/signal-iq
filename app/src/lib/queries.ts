@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap, Deal, Pipeline, DealConContacto } from '../types'
+import type { Contacto, ContactoScore, FrustrationScore, FragmentoVoc, CombGap, Deal, Pipeline, DealConContacto, ActividadItem } from '../types'
 
 export async function listarContactos(): Promise<Contacto[]> {
   const { data, error } = await supabase
@@ -86,4 +86,34 @@ export async function moverDealAEtapa(dealId: string, etapa: string, etapaTipo: 
     .update({ etapa, etapa_tipo: etapaTipo, updated_at: new Date().toISOString() })
     .eq('id', dealId)
   if (error) throw error
+}
+
+/**
+ * actividad_global es una vista (UNION ALL de eventos/fragmentos_voc/deals) sin
+ * relaciones declaradas, así que PostgREST no puede "embeder" el nombre del
+ * contacto en la misma consulta — se trae aparte y se une en el cliente.
+ */
+export async function listarActividadGlobal(limit = 60): Promise<{ items: ActividadItem[]; nombres: Record<string, string> }> {
+  const { data, error } = await supabase
+    .from('actividad_global')
+    .select('*')
+    .order('ocurrido_en', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  const items = data as ActividadItem[]
+
+  const contactoIds = [...new Set(items.map((i) => i.contacto_id))]
+  const nombres: Record<string, string> = {}
+  if (contactoIds.length > 0) {
+    const { data: contactos, error: errorContactos } = await supabase
+      .from('contactos')
+      .select('id, nombre, email')
+      .in('id', contactoIds)
+    if (errorContactos) throw errorContactos
+    for (const c of contactos as Pick<Contacto, 'id' | 'nombre' | 'email'>[]) {
+      nombres[c.id] = c.nombre ?? c.email ?? 'Sin nombre'
+    }
+  }
+
+  return { items, nombres }
 }

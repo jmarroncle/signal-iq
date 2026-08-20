@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import { ContactosPage } from './pages/ContactosPage'
 import { FichaContactoPage } from './pages/FichaContactoPage'
 import { PipelinePage } from './pages/PipelinePage'
+import { ActividadGlobalPage } from './pages/ActividadGlobalPage'
 
 function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -29,12 +30,14 @@ export default function App() {
           <nav className="flex gap-4">
             <NavItem to="/">Contactos</NavItem>
             <NavItem to="/pipeline">Pipeline</NavItem>
+            <NavItem to="/actividad">Actividad</NavItem>
           </nav>
         </header>
         <Routes>
           <Route path="/" element={<ContactosPage />} />
           <Route path="/contactos/:id" element={<FichaContactoPage />} />
           <Route path="/pipeline" element={<PipelinePage />} />
+          <Route path="/actividad" element={<ActividadGlobalPage />} />
         </Routes>
       </div>
     </BrowserRouter>
