@@ -52,4 +52,8 @@ recomendación conductual accionable en una sola vista — con o sin CRM propio.
 
 ## Estado
 
-Fase de diseño — MVP y modelo de datos definidos, sin implementar todavía.
+- ✅ MVP, modelo de datos, fórmulas y flujos de onboarding diseñados (`docs/`)
+- ✅ Schema corrido en Supabase ("Behavioral platform", schema `signal_iq`) — tablas, funciones, triggers y seeds en producción
+- ⬜ Frontend — no hay UI todavía
+- ⬜ Backend/API (los endpoints de `03-api-endpoints.md` son spec, no código)
+- ⬜ Integraciones (Segment, Klaviyo/Wati, `pg_cron`)
