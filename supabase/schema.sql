@@ -553,6 +553,75 @@ esta señal, el equipo nunca se entera de que casi la pierde.
   2
 );
 
+insert into signal_iq.wiki_articles (slug, titulo, categoria, contenido_md, metricas_relacionadas, orden) values (
+  'com-b',
+  '¿Qué es COM-B y por qué importa?',
+  'comb',
+  $md$
+## ¿Qué es?
+
+COM-B es un modelo de comportamiento que dice algo simple: para que una persona
+haga algo (en este caso, decidir invertir o comprar) tienen que estar presentes
+**tres condiciones a la vez**:
+
+- **Capability** (capacidad) — ¿puede hacerlo? ¿entiende cómo?
+- **Opportunity** (oportunidad) — ¿el contexto se lo permite? ¿confía en que es
+  seguro/legal/posible?
+- **Motivation** (motivación) — ¿quiere hacerlo? ¿el valor le convence?
+
+Si falta cualquiera de las tres, el comportamiento **no pasa** — no importa
+cuánto sobren las otras dos. Alguien puede estar 100% motivado a invertir y
+frenarse igual porque no entiende un paso del proceso (falta capability).
+
+## ¿Cómo se arma?
+
+Los mismos 5 tags que clasifican el lenguaje VOC ya vienen mapeados a una de las
+tres dimensiones:
+
+| Tag VOC | Dimensión COM-B | Qué significa |
+|---|---|---|
+| `confusion` | Capability | no entiende un paso del proceso o del producto |
+| `proceso_complejo` | Capability | el proceso operativo le resulta pesado |
+| `riesgo_legal` | Opportunity | percibe una barrera regulatoria o de confianza |
+| `precio` | Motivation | duda si el valor justifica el costo |
+| `intencion_compra` | Motivation | ya quiere, falta remover la última fricción |
+
+Cuando un contacto tiene un fragmento VOC reciente con alguno de estos tags, el
+sistema resuelve automáticamente cuál es su brecha activa y sugiere el nudge
+(empujón conductual) correspondiente — eso es lo que aparece como **Acción
+Recomendada** en su ficha.
+
+## ¿Por qué importa para el negocio?
+
+Clasificar el lenguaje VOC sin COM-B te da un diagnóstico sin receta: "esta
+persona está confundida" no dice qué hacer con eso. COM-B traduce cada tipo de
+fricción en una clase de solución distinta — y confundirlas cuesta plata:
+
+- A alguien que **no entiende** (Capability) mandarle más información no ayuda —
+  necesita información **más clara**, no más.
+- A alguien que **no confía** en el marco legal (Opportunity) mandarle una
+  explicación del producto no ayuda — necesita **evidencia externa** (garantías,
+  documentación, testimonios), no más argumento de venta.
+- A alguien que **entiende y confía pero no está convencido** (Motivation)
+  mandarle documentación legal no ayuda — necesita ver el **valor**, no más
+  tranquilidad.
+
+Mandar el mismo email genérico a los tres es gastar presupuesto de contenido sin
+mover a nadie.
+
+## ¿Cómo actuar?
+
+- **Capability** (confusión / proceso complejo) → simplificar, dar un ejemplo
+  concreto, ofrecer ayuda guiada.
+- **Opportunity** (riesgo legal / barrera externa) → remover la barrera con
+  evidencia: documentación, testimonios, garantías.
+- **Motivation** (precio / intención de compra) → reforzar el valor percibido, o
+  si ya está convencido, contacto directo para remover la última fricción.
+  $md$,
+  array['tag_semantico','comb_dimension'],
+  3
+);
+
 -- ============================================
 -- FUNCIONES: LEAD SCORE
 -- ============================================
